@@ -499,7 +499,7 @@ function settings.updateApp()
 				"DownloadAppUpdate",
 				{
 					Type = "FileDownload",
-					Link = "https://github.com" .. lastVpkLink,
+					Link = lastVpkLink,
 					Path = "NOBORU.vpk",
 					OnComplete = function()
 						UpdateApp()
@@ -567,12 +567,12 @@ SettingsFunctions = {
 				"CheckLatestVersion",
 				{
 					Type = "StringRequest",
-					Link = "https://github.com/Creckeryop/NOBORU/releases/latest",
+					Link = "https://api.github.com/repos/Creckeryop/NOBORU/releases/latest",
 					Table = file,
 					Index = "string",
 					OnComplete = function()
 						local content = file.string or ""
-						local tag = content:match("releases/tag/([0-9.]+)")
+						local tag = content:match('"tag_name"%s*:%s*"([0-9.]+)"')
 
 						if tag == nil then
 							return
@@ -583,32 +583,29 @@ SettingsFunctions = {
 							return
 						end
 
-						local assetsFile = {}
-						Threads.insertTask(
-							"LoadAssetsData",
-							{
-								Type = "StringRequest",
-								Link = "https://github.com/Creckeryop/NOBORU/releases/expanded_assets/" .. tag,
-								Table = assetsFile,
-								Index = "string",
-								OnComplete = function ()
-									local assetsContent = assetsFile.string or ""
-									local link = assetsContent:match('href="([^"]-%.vpk)"') or ""
-									local late = link:match("/([^/]-)/[^/]-%.vpk")
-									if late then
-										lastVpkLink = link
-										lastVpkSize = assetsContent:match(">([0-9.]* MB)<") or "NaN"
-										settings.LateVersion = latestVersion or settings.LateVersion
-										local body = content:match('markdown%-body[^>]-">(.-)</div>') or ""
-										changesText = body:gsub("\n+%s-(%S)", "\n%1"):gsub("<li>", " * "):gsub("<[^>]->", ""):gsub("\n\n", "\n"):gsub("^\n", ""):gsub("%s+$", "") or ""				
-										if settings.LateVersion and settings.Version and tonumber(settings.LateVersion) > tonumber(settings.Version) then
-											Changes.load(Language[settings.Language].NOTIFICATIONS.NEW_UPDATE_AVAILABLE .. " : " .. settings.LateVersion .. "\n" .. Language[settings.Language].SETTINGS.CurrentVersionIs .. settings.Version .. "\n\n" .. changesText)
-											Notifications.push(Language[settings.Language].NOTIFICATIONS.NEW_UPDATE_AVAILABLE .. " " .. settings.LateVersion)
-										end
-									end
-								end
-							}
-						)
+						local vpkLink = content:match('"browser_download_url"%s*:%s*"(https://[^"]-%.vpk)"')
+						local vpkSize = content:match('"name"%s*:%s*"[^"]-%.vpk".-"size"%s*:%s*(%d+)')
+
+						if vpkLink then
+							lastVpkLink = vpkLink
+							if vpkSize then
+								local sizeMB = tonumber(vpkSize) / (1024 * 1024)
+								lastVpkSize = string.format("%.2f MB", sizeMB)
+							else
+								lastVpkSize = "NaN"
+							end
+							settings.LateVersion = latestVersion or settings.LateVersion
+							local body = content:match('"body"%s*:%s*"(.-)"')
+							if body then
+								changesText = body:gsub("\\r\\n", "\n"):gsub("\\n", "\n"):gsub("\\t", " "):gsub("\\(.)", "%1"):gsub("^%s+", ""):gsub("%s+$", "") or ""
+							else
+								changesText = ""
+							end
+							if settings.LateVersion and settings.Version and tonumber(settings.LateVersion) > tonumber(settings.Version) then
+								Changes.load(Language[settings.Language].NOTIFICATIONS.NEW_UPDATE_AVAILABLE .. " : " .. settings.LateVersion .. "\n" .. Language[settings.Language].SETTINGS.CurrentVersionIs .. settings.Version .. "\n\n" .. changesText)
+								Notifications.push(Language[settings.Language].NOTIFICATIONS.NEW_UPDATE_AVAILABLE .. " " .. settings.LateVersion)
+							end
+						end
 					end
 				}
 			)

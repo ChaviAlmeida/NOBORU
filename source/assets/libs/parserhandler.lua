@@ -352,7 +352,7 @@ function ParserManager.updateParserList(Table, Insert)
 				file,
 				{
 					Type = "StringRequest",
-					Link = "https://api.github.com/repos/Creckeryop/NOBORU-parsers/contents/parsers",
+					Link = "https://api.github.com/repos/ChaviAlmeida/NOBORU-parsers/contents/parsers",
 					Table = file,
 					Index = "string"
 				}

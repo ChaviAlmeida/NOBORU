@@ -1,9 +1,6 @@
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = join(__dirname, "..");
+const PARSERS_DIR = "/vercel/share/v0-project/parsers";
 
 const TOKEN = process.env.GITHUB_TOKEN;
 const OWNER = "ChaviAlmeida";
@@ -35,7 +32,7 @@ async function getFileSha(filename) {
 }
 
 async function uploadFile(filename) {
-  const localPath = join(PROJECT_ROOT, "parsers", filename);
+  const localPath = `${PARSERS_DIR}/${filename}`;
   console.log(`  Reading from: ${localPath}`);
   const content = readFileSync(localPath, "utf-8");
   const base64Content = Buffer.from(content).toString("base64");

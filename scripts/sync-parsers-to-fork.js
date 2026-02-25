@@ -47,15 +47,15 @@ const DEAD_PARSERS = [
 const NEW_PARSERS = [
   {
     name: "[DF]MangaDex3.lua",
-    localPath: "./parsers/[DF]MangaDex3.lua",
+    localPath: "/vercel/share/v0-project/parsers/[DF]MangaDex3.lua",
   },
   {
     name: "[EN]MangaPill.lua",
-    localPath: "./parsers/[EN]MangaPill.lua",
+    localPath: "/vercel/share/v0-project/parsers/[EN]MangaPill.lua",
   },
   {
     name: "[EN]MangaSee2.lua",
-    localPath: "./parsers/[EN]MangaSee2.lua",
+    localPath: "/vercel/share/v0-project/parsers/[EN]MangaSee2.lua",
   },
 ];
 
@@ -94,8 +94,8 @@ async function deleteFile(filename) {
 }
 
 async function uploadFile(filename, localPath) {
-  const fs = await import("fs");
-  const content = fs.readFileSync(localPath, "utf-8");
+  const fs = await import("node:fs");
+  const content = fs.default.readFileSync(localPath, "utf-8");
   const base64Content = Buffer.from(content).toString("base64");
 
   const sha = await getFileSha(filename);

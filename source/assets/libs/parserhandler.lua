@@ -352,7 +352,7 @@ function ParserManager.updateParserList(Table, Insert)
 				file,
 				{
 					Type = "StringRequest",
-					Link = "https://github.com/Creckeryop/NOBORU-parsers/tree/master/parsers",
+					Link = "https://api.github.com/repos/ChaviAlmeida/NOBORU-parsers/contents/parsers",
 					Table = file,
 					Index = "string"
 				}
@@ -360,18 +360,18 @@ function ParserManager.updateParserList(Table, Insert)
 			while Threads.check(file) do
 				coroutine.yield(false)
 			end
-			for name, path in file.string:gmatch('{"name":"([^"]-%.lua)","path":"(parsers/[^"]-)","contentType":"file"}') do
-				local link2row = "https://raw.githubusercontent.com/Creckeryop/NOBORU-parsers/master/" .. path
+			local response = file.string or ""
+			for name, download_url in response:gmatch('"name"%s*:%s*"([^"]-%.lua)".-"download_url"%s*:%s*"(https://raw%.githubusercontent%.com/[^"]-)"') do
 				local path2row = "ux0:data/noboru/parsers/" .. name
 				Threads.addTask(
-					link2row,
+					download_url,
 					{
 						Type = "FileDownload",
-						Link = link2row,
+						Link = download_url,
 						Path = "parsers/" .. name
 					}
 				)
-				while Threads.check(link2row) do
+				while Threads.check(download_url) do
 					coroutine.yield(false)
 				end
 				if doesFileExist(path2row) then

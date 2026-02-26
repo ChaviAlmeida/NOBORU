@@ -17,56 +17,67 @@ const DEAD_PARSERS = [
   "[RAW]LoveHug.lua",
 ];
 
-async function getFileSha(filename) {
-  const encoded = encodeURIComponent(filename);
-  const res = await fetch(`${API}/${encoded}`, {
-    headers: {
-      Authorization: `token ${TOKEN}`,
-      Accept: "application/vnd.github.v3+json",
-    },
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.sha;
-}
-
-async function deleteFile(filename, sha) {
-  const encoded = encodeURIComponent(filename);
-  const res = await fetch(`${API}/${encoded}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `token ${TOKEN}`,
-      Accept: "application/vnd.github.v3+json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      message: `Remove dead parser: ${filename}`,
-      sha: sha,
-    }),
-  });
-  return res.ok;
-}
-
 async function main() {
-  console.log(`=== Deleting ${DEAD_PARSERS.length} dead parsers from ${REPO} ===\n`);
+  console.log("=== Fetching current file list from fork ===\n");
+
+  const listRes = await fetch(API, {
+    headers: {
+      Authorization: `token ${TOKEN}`,
+      Accept: "application/vnd.github.v3+json",
+    },
+  });
+
+  if (!listRes.ok) {
+    console.log("ERROR: Could not fetch file list:", listRes.status, await listRes.text());
+    return;
+  }
+
+  const files = await listRes.json();
+  console.log(`Found ${files.length} files in parsers/\n`);
+
+  const fileMap = {};
+  for (const f of files) {
+    fileMap[f.name] = { sha: f.sha, url: f.url };
+  }
+
   let deleted = 0;
   let skipped = 0;
 
   for (const name of DEAD_PARSERS) {
     process.stdout.write(`  ${name}: `);
-    const sha = await getFileSha(name);
-    if (!sha) {
-      console.log("NOT FOUND (already deleted or never existed)");
+
+    if (!fileMap[name]) {
+      console.log("NOT FOUND (already deleted)");
       skipped++;
       continue;
     }
-    const ok = await deleteFile(name, sha);
-    if (ok) {
+
+    const fileUrl = fileMap[name].url;
+    const sha = fileMap[name].sha;
+
+    const delRes = await fetch(fileUrl, {
+      method: "DELETE",
+      headers: {
+        Authorization: `token ${TOKEN}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: `Remove dead parser: ${name}`,
+        sha: sha,
+      }),
+    });
+
+    if (delRes.ok) {
       console.log("DELETED");
       deleted++;
     } else {
-      console.log("FAILED");
+      const errText = await delRes.text();
+      console.log(`FAILED (${delRes.status}): ${errText.substring(0, 200)}`);
     }
+
+    // Small delay to avoid rate limiting
+    await new Promise((r) => setTimeout(r, 500));
   }
 
   console.log(`\nResults: ${deleted} deleted, ${skipped} skipped`);

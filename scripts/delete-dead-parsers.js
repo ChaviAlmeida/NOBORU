@@ -35,9 +35,15 @@ async function main() {
   const files = await listRes.json();
   console.log(`Found ${files.length} files in parsers/\n`);
 
+  // Debug: list all file names so we can see what the API returns
+  for (const f of files) {
+    console.log(`  -> "${f.name}"`);
+  }
+  console.log("");
+
   const fileMap = {};
   for (const f of files) {
-    fileMap[f.name] = { sha: f.sha, url: f.url };
+    fileMap[f.name] = { sha: f.sha, path: f.path };
   }
 
   let deleted = 0;
@@ -52,10 +58,13 @@ async function main() {
       continue;
     }
 
-    const fileUrl = fileMap[name].url;
+    const filePath = fileMap[name].path;
     const sha = fileMap[name].sha;
+    const deleteUrl = `https://api.github.com/repos/${REPO}/contents/${encodeURIComponent(filePath).replace(/%2F/g, "/")}`;
+    console.log(`    URL: ${deleteUrl}`);
+    console.log(`    SHA: ${sha}`);
 
-    const delRes = await fetch(fileUrl, {
+    const delRes = await fetch(deleteUrl, {
       method: "DELETE",
       headers: {
         Authorization: `token ${TOKEN}`,

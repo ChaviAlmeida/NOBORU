@@ -43,7 +43,7 @@ async function main() {
 
   const fileMap = {};
   for (const f of files) {
-    fileMap[f.name] = { sha: f.sha, path: f.path };
+    fileMap[f.name] = { sha: f.sha, selfUrl: f.url };
   }
 
   let deleted = 0;
@@ -58,13 +58,12 @@ async function main() {
       continue;
     }
 
-    const filePath = fileMap[name].path;
+    const selfUrl = fileMap[name].selfUrl.split("?")[0];
     const sha = fileMap[name].sha;
-    const deleteUrl = `https://api.github.com/repos/${REPO}/contents/${encodeURIComponent(filePath).replace(/%2F/g, "/")}`;
-    console.log(`    URL: ${deleteUrl}`);
+    console.log(`    URL: ${selfUrl}`);
     console.log(`    SHA: ${sha}`);
 
-    const delRes = await fetch(deleteUrl, {
+    const delRes = await fetch(selfUrl, {
       method: "DELETE",
       headers: {
         Authorization: `token ${TOKEN}`,
